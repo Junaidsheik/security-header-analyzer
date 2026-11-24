@@ -47,7 +47,7 @@ Referrer-Policy: strict-origin-when-cross-origin
 Permissions-Policy: camera=(), geolocation=(), microphone=()
 ```
 
-The app can also parse only a list of header lines. Header names and values must use the format `Header-Name: value`.
+The app accepts both `Header-Name: value` lines and browser-devtools-style paired lines where each header name is followed by its value on the next line.
 
 ### Reading the results
 

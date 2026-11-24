@@ -199,11 +199,21 @@ Permissions-Policy: camera=(), geolocation=(), microphone=()`;
 
     function parseHeaders(raw) {
       const headers = {};
-      raw.split(/\r?\n/).forEach(line => {
+      const lines = raw.replace(/\r/g, "").split("\n").map(line => line.trim()).filter(Boolean);
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
         const match = line.match(/^([^:]+):\s*(.*)$/);
-        if (!match) return;
-        headers[match[1].trim().toLowerCase()] = match[2].trim();
-      });
+        if (match) {
+          headers[match[1].trim().toLowerCase()] = match[2].trim();
+          continue;
+        }
+
+        if (/^[A-Za-z][A-Za-z0-9-]*$/.test(line) && i + 1 < lines.length) {
+          headers[line.toLowerCase()] = lines[i + 1];
+          i++;
+        }
+      }
       return headers;
     }
 
