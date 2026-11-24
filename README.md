@@ -4,7 +4,7 @@ A dependency-free browser tool for reviewing common HTTP response security heade
 
 ## Features
 
-- Analyzes CSP, HSTS, MIME sniffing, framing, referrer, and permissions policies
+- Analyzes CSP, HSTS, MIME sniffing, framing, referrer, permissions, opener, resource, and CORS policies
 - Gives a 0–100% baseline security score
 - Uses light and dark themes from system preferences
 - Saves the last pasted headers in localStorage

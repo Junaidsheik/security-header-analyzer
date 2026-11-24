@@ -248,6 +248,53 @@ Permissions-Policy: camera=(), geolocation=(), microphone=()`;
           }
         },
         {
+          key: "cross-origin-opener-policy",
+          name: "Cross-Origin-Opener-Policy",
+          description: "Isolates the browsing context from other origins.",
+          evaluate(value) {
+            if (!value) return ["warn", "Missing", "Consider same-origin or same-origin-allow-popups."];
+            if (/^same-origin(?:-allow-popups)?$/i.test(value.trim())) return ["good", "Configured", "A valid opener isolation policy is present."];
+            return ["warn", "Review", "Verify that the configured opener policy is intentional."];
+          }
+        },
+        {
+          key: "cross-origin-resource-policy",
+          name: "Cross-Origin-Resource-Policy",
+          description: "Controls whether other origins may load this resource.",
+          evaluate(value) {
+            if (!value) return ["warn", "Not set", "Set same-origin or same-site for sensitive responses if appropriate."];
+            return ["good", "Configured", "A cross-origin resource policy is present."];
+          }
+        },
+        {
+          key: "access-control-allow-origin",
+          name: "Access-Control-Allow-Origin",
+          description: "Controls browser access to cross-origin responses.",
+          evaluate(value) {
+            if (!value) return ["good", "Not needed", "No CORS allow-origin header is present."];
+            if (value.trim() === "*") return ["warn", "Wildcard", "Verify that public resource access is intentional."];
+            return ["good", "Restricted", "Access is limited to an explicit origin or policy."];
+          }
+        },
+        {
+          key: "cross-origin-embedder-policy",
+          name: "Cross-Origin-Embedder-Policy",
+          description: "Controls loading cross-origin resources without CORS.",
+          evaluate(value) {
+            if (!value) return ["warn", "Not set", "Consider require-corp if cross-origin isolation is needed."];
+            return ["good", "Configured", "An embedder policy is present."];
+          }
+        },
+        {
+          key: "origin-agent-cluster",
+          name: "Origin-Agent-Cluster",
+          description: "Requests origin-keyed process isolation.",
+          evaluate(value) {
+            if (!value) return ["warn", "Not set", "This isolation hint is optional for most sites."];
+            return ["good", "Configured", "Origin-agent-cluster is explicitly set."];
+          }
+        },
+        {
           key: "x-content-type-options",
           name: "X-Content-Type-Options",
           description: "Stops MIME-type sniffing.",
@@ -283,6 +330,28 @@ Permissions-Policy: camera=(), geolocation=(), microphone=()`;
             return value
               ? ["good", "Configured", "Browser feature access is explicitly controlled."]
               : ["warn", "Missing", "Consider restricting unused browser features."];
+          }
+        },
+        {
+          key: "x-permitted-cross-domain-policies",
+          name: "X-Permitted-Cross-Domain-Policies",
+          description: "Controls Adobe cross-domain policy access.",
+          evaluate(value) {
+            if (!value) return ["good", "Not set", "No cross-domain policy override is required for most sites."];
+            return value.trim().toLowerCase() === "none"
+              ? ["good", "Restricted", "Cross-domain policy access is disabled."]
+              : ["warn", "Review", "Verify the cross-domain policy is intentionally broad."];
+          }
+        },
+        {
+          key: "x-download-options",
+          name: "X-Download-Options",
+          description: "Legacy protection for downloaded HTML in Internet Explorer.",
+          evaluate(value) {
+            if (!value) return ["good", "Not needed", "Modern browsers do not require this legacy header."];
+            return value.trim().toLowerCase() === "noopen"
+              ? ["good", "Configured", "Legacy downloaded-file protection is enabled."]
+              : ["warn", "Review", "Use noopen for legacy protection."];
           }
         }
       ];
