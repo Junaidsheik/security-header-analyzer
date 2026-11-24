@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Security Header Analyzer</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f4f6f8;
+      --surface: #ffffff;
+      --text: #17202a;
+      --muted: #687383;
+      --line: #dfe5ec;
+      --green: #16803a;
+      --green-bg: #eaf7ed;
+      --amber: #9a6700;
+      --amber-bg: #fff4d6;
+      --red: #b42318;
+      --red-bg: #ffebe8;
+      --blue: #175cd3;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #101419;
+        --surface: #171c22;
+        --text: #edf2f7;
+        --muted: #aab4bf;
+        --line: #303945;
+        --green: #75d58a;
+        --green-bg: #183524;
+        --amber: #f3c969;
+        --amber-bg: #3b3018;
+        --red: #ff9c94;
+        --red-bg: #40221f;
+        --blue: #84b4ff;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.5 Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main {
+      width: min(980px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 48px 0;
+    }
+    header { margin-bottom: 24px; }
+    h1 { margin: 0 0 6px; letter-spacing: -0.03em; }
+    header p { margin: 0; color: var(--muted); }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(280px, 0.85fr) minmax(380px, 1.15fr);
+      gap: 18px;
+      align-items: start;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--surface);
+      box-shadow: 0 12px 36px rgba(20, 30, 40, 0.06);
+      overflow: hidden;
+    }
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .card-head h2 { margin: 0; font-size: 14px; }
+    textarea {
+      width: 100%;
+      min-height: 430px;
+      resize: vertical;
+      border: 0;
+      outline: 0;
+      padding: 16px;
+      background: transparent;
+      color: var(--text);
+      font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .actions {
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      border-top: 1px solid var(--line);
+    }
+    button {
+      height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 12px;
+      background: var(--surface);
+      color: var(--text);
+      font: inherit;
+      cursor: pointer;
+    }
+    button.primary { border-color: var(--blue); background: var(--blue); color: white; }
+    button:hover { filter: brightness(0.97); }
+    .summary {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .score {
+      width: 76px;
+      height: 76px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 76px;
+      border-radius: 50%;
+      border: 8px solid var(--line);
+      font-size: 20px;
+      font-weight: 750;
+    }
+    .summary strong { display: block; font-size: 17px; }
+    .summary span { color: var(--muted); }
+    .results { padding: 6px 16px 12px; }
+    .result {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .result:last-child { border-bottom: 0; }
+    .result-name strong { display: block; }
+    .result-name small { color: var(--muted); }
+    .badge {
+      align-self: start;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .good { color: var(--green); background: var(--green-bg); }
+    .warn { color: var(--amber); background: var(--amber-bg); }
+    .bad { color: var(--red); background: var(--red-bg); }
+    @media (max-width: 760px) {
+      main { padding-top: 24px; }
+      .grid { grid-template-columns: 1fr; }
+      textarea { min-height: 300px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Security Header Analyzer</h1>
+      <p>Paste HTTP response headers to review common browser security controls.</p>
+    </header>
+    <div class="grid">
+      <section class="card">
+        <div class="card-head">
+          <h2>Response headers</h2>
+        </div>
+        <textarea id="headers" spellcheck="false" aria-label="HTTP response headers"></textarea>
+        <div class="actions">
+          <button id="analyze" class="primary" type="button">Analyze headers</button>
+          <button id="clear" type="button">Clear</button>
+        </div>
+      </section>
+      <section class="card" aria-live="polite">
+        <div class="summary">
+          <div id="score" class="score">—</div>
+          <div>
+            <strong id="grade">Waiting for analysis</strong>
+            <span id="scoreText">Paste headers or load the example.</span>
+          </div>
+        </div>
+        <div id="results" class="results"></div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const example = `HTTP/1.1 200 OK
+Content-Security-Policy: default-src 'self'; script-src 'self'
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: camera=(), geolocation=(), microphone=()`;
+
+    const textarea = document.querySelector("#headers");
+    const scoreEl = document.querySelector("#score");
+    const gradeEl = document.querySelector("#grade");
+    const scoreTextEl = document.querySelector("#scoreText");
+    const resultsEl = document.querySelector("#results");
+
+    textarea.value = example;
+
+    function parseHeaders(raw) {
+      const headers = {};
+      raw.split(/\r?\n/).forEach(line => {
+        const match = line.match(/^([^:]+):\s*(.*)$/);
+        if (!match) return;
+        headers[match[1].trim().toLowerCase()] = match[2].trim();
+      });
+      return headers;
+    }
+
+    function escapeHtml(value) {
+      const span = document.createElement("span");
+      span.textContent = value;
+      return span.innerHTML;
+    }
+
+    function analyze() {
+      const headers = parseHeaders(textarea.value);
+      const checks = [
+        {
+          key: "content-security-policy",
+          name: "Content-Security-Policy",
+          description: "Restricts resources and script sources.",
+          evaluate(value) {
+            if (!value) return ["bad", "Missing", "Add a CSP that allows only trusted sources."];
+            if (/unsafe-inline|unsafe-eval|\*/i.test(value)) return ["warn", "Review", "The policy allows broad or unsafe sources."];
+            return ["good", "Present", "A restrictive policy is configured."];
+          }
+        },
+        {
+          key: "strict-transport-security",
+          name: "Strict-Transport-Security",
+          description: "Enforces HTTPS in supporting browsers.",
+          evaluate(value) {
+            if (!value) return ["bad", "Missing", "Set a long max-age and consider includeSubDomains."];
+            const match = value.match(/max-age=(\d+)/i);
+            if (!match || Number(match[1]) < 15552000) return ["warn", "Too short", "Use at least 180 days (15,552,000 seconds)."];
+            return ["good", "Strong", "A substantial HSTS lifetime is configured."];
+          }
+        },
+        {
+          key: "x-content-type-options",
+          name: "X-Content-Type-Options",
+          description: "Stops MIME-type sniffing.",
+          evaluate(value) {
+            return value?.toLowerCase() === "nosniff"
+              ? ["good", "Enabled", "MIME sniffing is disabled."]
+              : ["bad", "Missing", "Set this header to nosniff."];
+          }
+        },
+        {
+          key: "x-frame-options",
+          name: "X-Frame-Options",
+          description: "Limits whether the page may be framed.",
+          evaluate(value) {
+            if (!value) return ["bad", "Missing", "Use DENY or SAMEORIGIN, or enforce framing with CSP."];
+            return ["good", "Configured", "A framing restriction is present."];
+          }
+        },
+        {
+          key: "referrer-policy",
+          name: "Referrer-Policy",
+          description: "Controls referrer information sent to destinations.",
+          evaluate(value) {
+            if (!value) return ["warn", "Missing", "Define an explicit referrer policy."];
+            return ["good", "Configured", "An explicit policy is present."];
+          }
+        },
+        {
+          key: "permissions-policy",
+          name: "Permissions-Policy",
+          description: "Restricts access to powerful browser features.",
+          evaluate(value) {
+            return value
+              ? ["good", "Configured", "Browser feature access is explicitly controlled."]
+              : ["warn", "Missing", "Consider restricting unused browser features."];
+          }
+        }
+      ];
+
+      let points = 0;
+      resultsEl.innerHTML = checks.map(check => {
+        const [status, label, detail] = check.evaluate(headers[check.key]);
+        if (status === "good") points += 1;
+        if (status === "warn") points += 0.5;
+        return `
+          <div class="result">
+            <div class="result-name">
+              <strong>${check.name}</strong>
+              <small>${escapeHtml(detail)}</small>
+            </div>
+            <span class="badge ${status}">${label}</span>
+          </div>`;
+      }).join("");
+
+      const score = Math.round((points / checks.length) * 100);
+      scoreEl.textContent = `${score}%`;
+      scoreEl.className = `score ${score >= 80 ? "good" : score >= 50 ? "warn" : "bad"}`;
+      gradeEl.textContent = score >= 80 ? "Good baseline" : score >= 50 ? "Needs improvement" : "High priority gaps";
+      scoreTextEl.textContent = `${points} of ${checks.length} checks passed or partially passed.`;
+      localStorage.setItem("security-header-input", textarea.value);
+    }
+
+    document.querySelector("#analyze").addEventListener("click", analyze);
+    document.querySelector("#clear").addEventListener("click", () => {
+      textarea.value = "";
+      localStorage.removeItem("security-header-input");
+      scoreEl.textContent = "—";
+      scoreEl.className = "score";
+      gradeEl.textContent = "Waiting for analysis";
+      scoreTextEl.textContent = "Paste headers or load the example.";
+      resultsEl.innerHTML = "";
+      textarea.focus();
+    });
+
+    const saved = localStorage.getItem("security-header-input");
+    if (saved) textarea.value = saved;
+    analyze();
+  </script>
+</body>
+</html>
